@@ -6,4 +6,4 @@ COPY order-1.0-SNAPSHOT.jar order.jar
 # 暴露8080端口
 EXPOSE 80
 # 启动容器时的进程
-ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/order.jar"]
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/order.jar","--spring.profiles.active=test"]
