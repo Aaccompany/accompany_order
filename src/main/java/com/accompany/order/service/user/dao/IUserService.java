@@ -25,5 +25,5 @@ public interface IUserService extends IService<User> {
 
     Page<User> findAll(String name, int pageNum, int pageSize);
 
-    void login(UserLoginVo loginVo);
+    User login(UserLoginVo loginVo);
 }

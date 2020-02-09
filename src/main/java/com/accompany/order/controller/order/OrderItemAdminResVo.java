@@ -27,10 +27,10 @@ public class OrderItemAdminResVo {
     private Integer count;
 
     @ApiModelProperty(value = "订单项总价")
-    private Integer money;
+    private Double money;
 
     @ApiModelProperty(value = "商品单价")
-    private Integer unitPrice;
+    private Double unitPrice;
 
     @ApiModelProperty(value = "创建时间")
     private Date createTime;

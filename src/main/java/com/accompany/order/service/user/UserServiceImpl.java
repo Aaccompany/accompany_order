@@ -35,11 +35,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Autowired
     private UserMapper userMapper;
 
-    @Autowired
-    private HttpSession session;
 
-    @Autowired
-    private Gson gson;
 
     @Override
     public User getCurUser(){
@@ -87,7 +83,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
 
     @Override
-    public void login(UserLoginVo loginVo) {
+    public User login(UserLoginVo loginVo) {
         QueryWrapper<User> query = new QueryWrapper<>();
         query.lambda()
             .eq(User::getUsername,loginVo.getUsername())
@@ -96,7 +92,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if (user==null){
             throw new BaseRuntimeException(ResultCode.PARAM_ILLEGAL.modifyMessage("用户不存在"));
         }
-        session.setAttribute(SecurityInterceptor.SESSION_USER,gson.toJson(user));
+        return user;
     }
 
     @Override

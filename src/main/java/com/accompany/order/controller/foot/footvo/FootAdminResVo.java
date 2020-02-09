@@ -24,7 +24,7 @@ public class FootAdminResVo {
     private Long typeId;
 
     @ApiModelProperty(value = "钱")
-    private Long money;
+    private Double money;
 
     @ApiModelProperty(value = "食物照片")
     private String picture;

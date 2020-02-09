@@ -16,7 +16,7 @@ public class OrderAdminResVo {
     private Long id;
 
     @ApiModelProperty(value = "订单总价")
-    private Long money;
+    private Double money;
 
     @ApiModelProperty(value = "座位号")
     private Long tableId;

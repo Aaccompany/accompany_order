@@ -1,18 +1,22 @@
 package com.accompany.order.controller.user;
 
 
+import com.accompany.order.config.SecurityInterceptor;
 import com.accompany.order.service.user.dao.IUserService;
 import com.accompany.order.service.user.dto.User;
 import com.accompany.order.util.CommonUtils;
 import com.accompany.order.util.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.gson.Gson;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpSession;
 
 /**
  * <p>
@@ -29,6 +33,12 @@ public class UserController {
 
     @Resource(name = "userServiceImpl")
     private IUserService userService;
+
+    @Autowired
+    private HttpSession session;
+
+    @Autowired
+    private Gson gson;
 
     @PostMapping("/")
     @ApiOperation(value = "新增管理员(完成)", tags = "管理员->人员管理")
@@ -73,7 +83,8 @@ public class UserController {
     @PostMapping("/login")
     @ApiOperation(value = "管理员登入(完成)", tags = {"管理员->人员管理"})
     public Result login(@RequestBody UserLoginVo loginVo) {
-        userService.login(loginVo);
+        User user = userService.login(loginVo);
+        session.setAttribute(SecurityInterceptor.SESSION_USER,gson.toJson(user));
         return Result.success();
     }
 }

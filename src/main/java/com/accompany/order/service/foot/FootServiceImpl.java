@@ -74,6 +74,7 @@ public class FootServiceImpl extends ServiceImpl<FootMapper, Foot> implements IF
         foot.setUpdateTime(now);
         foot.setCreateUser(curUser.getName());
         foot.setUpdateUser(curUser.getName());
+        saveOrUpdate(foot);
     }
 
     @Override

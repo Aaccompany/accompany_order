@@ -11,11 +11,8 @@ import java.util.List;
  */
 @Data
 public class OrderReqVo {
-    @ApiModelProperty(value = "订单号")
-    private Long id;
-
     @ApiModelProperty(value = "订单总价")
-    private Long money;
+    private Double money;
 
     @ApiModelProperty(value = "座位号")
     private Long tableId;
