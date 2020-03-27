@@ -14,16 +14,16 @@ import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author Accompany
- * @since 2019-12-29
+ * @since 2020-03-05
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("order")
+@TableName("`order`")
 @ApiModel(value="Order对象", description="")
 public class Order implements Serializable {
 
@@ -55,7 +55,7 @@ public class Order implements Serializable {
 
     @ApiModelProperty(value = "修改者")
     @TableField("update_user")
-    private String updateUser;
+    private Long updateUser;
 
 
 }

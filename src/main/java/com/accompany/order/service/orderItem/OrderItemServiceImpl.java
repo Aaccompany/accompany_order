@@ -25,8 +25,14 @@ public class OrderItemServiceImpl extends ServiceImpl<OrderItemMapper, OrderItem
     @Autowired
     private OrderItemMapper orderItemMapper;
 
+    /**
+     * 根据订单id查询全部订单项
+     * @param orderId 订单id
+     * @return 订单下的全部订单项
+     */
     @Override
     public List<OrderItem> findAllByOrderId(Long orderId) {
+        //查询{orderId}订单下的全部订单项
         QueryWrapper<OrderItem> query = new QueryWrapper<>();
         query.lambda()
             .eq(OrderItem::getOrderId,orderId);

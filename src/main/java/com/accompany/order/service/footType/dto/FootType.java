@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author Accompany
@@ -47,11 +47,11 @@ public class FootType implements Serializable {
 
     @ApiModelProperty(value = "创建者")
     @TableField("create_user")
-    private String createUser;
+    private Long createUser;
 
     @ApiModelProperty(value = "修改者")
     @TableField("update_user")
-    private String updateUser;
+    private Long updateUser;
 
     @ApiModelProperty(value = "创建时间")
     @TableField("create_time")

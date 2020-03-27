@@ -118,11 +118,13 @@
                 <version>1.2.0</version>
                 <configuration>
                     <!-- 配置docker server 位置，否则默认127.0.0.1 -->
-                    <dockerHost>http://120.76.56.183:2377</dockerHost>
+                    <dockerHost>https://120.76.56.183:2376</dockerHost>
                     <!-- imageName冒号前面为容器名，后面是容器版本号 -->
                     <imageName>${project.artifactId}:${project.version}</imageName>
                     <!-- Dockerfile 文件位置 -->
                     <dockerDirectory>${project.basedir}/config</dockerDirectory>
+                    <!--指定pem证书文件路径地址 -->
+                    <dockerCertPath>E:/ca/docker</dockerCertPath>
                     <resources>
                         <resource>
                             <targetPath>/</targetPath>

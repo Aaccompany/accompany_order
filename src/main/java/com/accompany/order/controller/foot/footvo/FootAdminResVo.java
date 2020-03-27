@@ -1,5 +1,6 @@
 package com.accompany.order.controller.foot.footvo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -30,10 +31,10 @@ public class FootAdminResVo {
     private String picture;
 
     @ApiModelProperty(value = "创建者")
-    private Long createUser;
+    private String createUser;
 
     @ApiModelProperty(value = "修改者")
-    private Long updateUser;
+    private String updateUser;
 
     @ApiModelProperty(value = "创建时间")
     private Date createTime;

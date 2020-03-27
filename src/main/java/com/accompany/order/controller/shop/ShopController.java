@@ -33,7 +33,7 @@ public class ShopController {
     @ApiOperation(value = "获取店面信息(完成)",tags = "用户页面")
     @ApiImplicitParam(name = "id",value = "店面id")
     public Result<ShopResVo> findShopMes(@PathVariable Long id){
-        return Result.success(CommonUtils.genByCopyProperties(shopService.findById(id),ShopResVo.class));
+        return Result.success(CommonUtils.genByCopyProperties(shopService.findShopById(id),ShopResVo.class));
     }
 }
 

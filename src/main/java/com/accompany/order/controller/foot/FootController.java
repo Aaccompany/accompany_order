@@ -10,6 +10,7 @@ import com.accompany.order.controller.foot.footvo.FootResVo;
 import com.accompany.order.exception.BaseRuntimeException;
 import com.accompany.order.service.foot.dao.IFootService;
 import com.accompany.order.service.foot.dto.Foot;
+import com.accompany.order.service.foot.dto.FootCountOnMonth;
 import com.accompany.order.service.footType.dao.IFootTypeService;
 import com.accompany.order.service.footType.dto.FootType;
 import com.accompany.order.util.CommonUtils;
@@ -65,7 +66,7 @@ public class FootController {
         @ApiImplicitParam(name = "pageNum",value = "当前页默认为1"),
         @ApiImplicitParam(name = "pageSize",value = "当前页默认为20"),
     })
-    public Result<Page<FootAdminResVo>> findAllFootAdmin(@RequestParam String name, @RequestParam(defaultValue = "1") int pageNum, @RequestParam(defaultValue = "20") int pageSize){
+    public Result<Page<FootAdminResVo>> findAllFootAdmin(@RequestParam(required = false) String name, @RequestParam(defaultValue = "1") int pageNum, @RequestParam(defaultValue = "20") int pageSize){
         Page<Foot> list = footService.findAllFootAdmin(name,pageNum,pageSize);
         return Result.success(CommonUtils.genPageByCopyProperties(list,FootAdminResVo.class));
     }
@@ -79,7 +80,6 @@ public class FootController {
 
     @DeleteMapping("/admin/{id}")
     @ApiOperation(value = "删除菜品(完成)",tags = {"管理员->菜品管理"})
-    @ApiImplicitParam(name = "id",value = "菜品id")
     public Result delFootAdmin(@PathVariable Long id){
         footService.delFoot(id);
         return Result.success();
@@ -87,7 +87,6 @@ public class FootController {
 
     @GetMapping("/admin/{id}")
     @ApiOperation(value = "菜品详情(完成)",tags = {"管理员->菜品管理"})
-    @ApiImplicitParam(name = "id",value = "菜品id")
     public Result<FootAdminResVo> footDetailAdmin(@PathVariable Long id){
         Foot foot = footService.getById(id);
         if (foot==null){
@@ -98,7 +97,6 @@ public class FootController {
 
     @PutMapping("/admin/{id}")
     @ApiOperation(value = "修改菜品(完成)",tags = {"管理员->菜品管理"})
-    @ApiImplicitParam(name = "id",value = "菜品id")
     public Result updateFootAdmin(@PathVariable Long id,@RequestBody FootAdminReqVo footAdminReqVo){
         footService.updateFoot(id,footAdminReqVo);
         return Result.success();
@@ -111,9 +109,9 @@ public class FootController {
         @ApiImplicitParam(name = "pageNum",value = "当前页默认为1"),
         @ApiImplicitParam(name = "pageSize",value = "当前页默认为20"),
     })
-    public Result<Page<FootAdminResVo>> findAllFootTypeAdmin(@RequestParam String name,@RequestParam(defaultValue = "1") int pageNum,@RequestParam(defaultValue = "20") int pageSize){
+    public Result<Page<FootTypeAdminResVo>> findAllFootTypeAdmin(@RequestParam(required = false) String name,@RequestParam(defaultValue = "1") int pageNum,@RequestParam(defaultValue = "20") int pageSize){
         Page<FootType> page = footTypeService.findAllFootType(name, pageNum, pageSize);
-        return Result.success(CommonUtils.genPageByCopyProperties(page,FootAdminResVo.class));
+        return Result.success(CommonUtils.genPageByCopyProperties(page,FootTypeAdminResVo.class));
     }
 
     @PostMapping("/admin/footType")
@@ -125,7 +123,6 @@ public class FootController {
 
     @DeleteMapping("/admin/footType/{id}")
     @ApiOperation(value = "删除菜品类别(完成)",tags = {"管理员->菜品类别管理"})
-    @ApiImplicitParam(name = "id",value = "类别id")
     public Result delFootTypeAdmin(@PathVariable Long id){
         footTypeService.delFootType(id);
         return Result.success();
@@ -133,7 +130,6 @@ public class FootController {
 
     @GetMapping("/admin/footType/{id}")
     @ApiOperation(value = "菜品详情类别(完成)",tags = {"管理员->菜品类别管理","用户页面"})
-    @ApiImplicitParam(name = "id",value = "类别id")
     public Result<FootTypeAdminResVo> footTypeDetailAdmin(@PathVariable Long id){
         FootType footType = footTypeService.footTypeDetail(id);
         return Result.success(CommonUtils.genByCopyProperties(footType,FootTypeAdminResVo.class));
@@ -141,7 +137,6 @@ public class FootController {
 
     @PutMapping("/admin/footType/{id}")
     @ApiOperation(value = "修改菜品类别",tags = {"管理员->菜品类别管理"})
-    @ApiImplicitParam(name = "id",value = "类别id")
     public Result updateFootTypeAdmin(@PathVariable Long id,@RequestBody FootTypeAdminReqVo footTypeAdminReqVo){
         footTypeService.updateFootType(id,footTypeAdminReqVo);
         return Result.success();

@@ -19,7 +19,7 @@ public class OrderAdminResVo {
     private Double money;
 
     @ApiModelProperty(value = "座位号")
-    private Long tableId;
+    private Integer tableId;
 
     @ApiModelProperty(value = "是否结算 2:表示某种方式结算 1:表示结算 0：表示未结算")
     private Integer isPay;

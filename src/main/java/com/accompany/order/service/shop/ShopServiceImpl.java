@@ -4,7 +4,10 @@ import com.accompany.order.service.shop.dto.Shop;
 import com.accompany.order.service.shop.dao.ShopMapper;
 import com.accompany.order.service.shop.dao.IShopService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
 
 /**
  * <p>
@@ -17,8 +20,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IShopService {
 
+    @Resource
+    private ShopMapper shopMapper;
+
+    /**
+        * 获取店铺信息
+     * @param id 店铺Id
+     * @return 店铺信息
+     */
     @Override
-    public Shop findById(Long id) {
-        return findById(id);
+    public Shop findShopById(Long id) {
+        return shopMapper.selectById(id);
     }
 }

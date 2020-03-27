@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -67,16 +69,17 @@ public class OrderController {
         return Result.success(genOrderDetailVo(order));
     }
 
-    @GetMapping("/admin")
+    @GetMapping("/admin/list")
     @ApiOperation(value = "订单列表(完成)",tags = {"管理员->订单管理"})
     @ApiImplicitParams({
+        @ApiImplicitParam(name = "tableId",value = "查询对应桌号信息，不填则查询全部"),
         @ApiImplicitParam(name = "isPay",value = "表示某种方式结算 1:表示结算 0：表示未结算 不填则查询全部"),
         @ApiImplicitParam(name = "pageNum",value = "当前页默认为1"),
         @ApiImplicitParam(name = "pageSize",value = "当前页默认为20")
     })
-    public Result<Page<OrderAdminResVo>> placeOrder(int isPay,@RequestParam(defaultValue = "1") int pageNum, @RequestParam(defaultValue = "20") int pageSize){
-        Page<Order> page = orderService.findAllByQuery(isPay,pageNum,pageSize);
-        return Result.success(genOrdersDetailVo(page));
+    public Result<Page<OrderAdminResVo>> placeOrder(@RequestParam(defaultValue = "-1") int tableId,@RequestParam(defaultValue = "-1") int isPay,@RequestParam(defaultValue = "1") int pageNum, @RequestParam(defaultValue = "20") int pageSize){
+        Page<Order> page = orderService.findAllByQuery(tableId,isPay,pageNum,pageSize);
+        return Result.success(CommonUtils.genPageByCopyProperties(page,OrderAdminResVo.class));
     }
 
     @GetMapping("/admin/profit")

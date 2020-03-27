@@ -25,7 +25,7 @@ public interface IOrderService extends IService<Order> {
 
     Order findByTableId(int tableId);
 
-    Page<Order> findAllByQuery(int isPay, int pageNum, int pageSize);
+    Page<Order> findAllByQuery(int tableId,int isPay, int pageNum, int pageSize);
 
     List<Order> findAllByQuery(Long startTime, Long endTime,int isPay);
 }

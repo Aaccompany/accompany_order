@@ -20,6 +20,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -50,50 +53,88 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Resource(name = "orderItemServiceImpl")
     private IOrderItemService orderItemService;
 
+    /**
+     * 支付订单
+     * @param orderId 需要支付的订单id
+     */
     @Override
     public void payOrder(Long orderId) {
+        //获取当前登入用户信息
         User curUser = userService.getCurUser();
+        //判断当前登入是否具操作权限
         if (curUser==null||!curUser.getIsSuperAdmin()){
             throw new BaseRuntimeException(ResultCode.PERMISSION_DENIED.modifyMessage("权限不足"));
         }
+        //获取订单信息，并且判断订单是否存在
         Order order = orderMapper.selectById(orderId);
         if (order==null){
             throw new BaseRuntimeException(ResultCode.PERMISSION_DENIED.modifyMessage("订单不存在"));
         }
         order.setIsPay(1);
         order.setUpdateTime(new Date());
-        order.setUpdateUser(curUser.getName());
+        order.setUpdateUser(curUser.getId());
+        //修改订单状态
         saveOrUpdate(order);
     }
 
+    /**
+     * 创建订单
+     * @param orderReqVo 需要创建的订单信息
+     */
     @Override
     @Transactional(rollbackFor = Throwable.class)
     public void placeOrder(OrderReqVo orderReqVo) {
         Date now = new Date();
+        //初始化订单
         Order order = CommonUtils.genByCopyProperties(orderReqVo, Order.class);
         order.setIsPay(0);
         order.setUpdateTime(now);
         order.setCreateTime(now);
-        orderMapper.insert(order);
+        double money =0;
+        //获取全部菜品
+        Map<Long,Integer> footId2Count = orderReqVo.getItmeList().stream().collect(Collectors.toMap(OrderItemReqVo::getFootId,OrderItemReqVo::getCount));
+        //通过菜品Id查询菜品集合
+        List<Foot> footList = footService.findByIds(Lists.newArrayList(footId2Count.keySet()));
+        Map<Long, Foot> footMap = footList.stream().collect(Collectors.toMap(Foot::getId, item -> item));
+        for (Long footId : footId2Count.keySet()) {
+            Integer count = footId2Count.get(footId);
+            Foot foot = footMap.get(footId);
+            money = money +(count*foot.getMoney());
+        }
+        order.setMoney(money);
+        saveOrUpdate(order);
+        //添加订单中的每一个订单项到数据库
         for (OrderItemReqVo itemReqVo : orderReqVo.getItmeList()) {
-            Foot foot = footService.getById(itemReqVo.getFootId());
+            Foot foot = footMap.get(itemReqVo.getFootId());
+            //初始化订单项
             OrderItem item = CommonUtils.genByCopyProperties(itemReqVo,OrderItem.class);
             item.setOrderId(order.getId());
             item.setCreateTime(now);
             item.setUpdateTime(now);
-            item.setMoney(itemReqVo.getCount()*foot.getMoney());
+            double itemMoney = itemReqVo.getCount() * foot.getMoney();
+            item.setMoney(itemMoney);
             item.setFootName(foot.getName());
             item.setUnitPrice(foot.getMoney());
+            //把订单项保存到数据库
             orderItemService.save(item);
         }
+
     }
 
+    /**
+     * 订单详情
+     * @param orderId 需要查询的订单id
+     * @return 订单对象
+     */
     @Override
     public Order orderDetail(Long orderId) {
+        //获取当前登入用户信息
         User curUser = userService.getCurUser();
+        //判断当前登入是否具操作权限
         if (curUser==null||!curUser.getIsSuperAdmin()){
             throw new BaseRuntimeException(ResultCode.PERMISSION_DENIED.modifyMessage("权限不足"));
         }
+        //获取订单信息，并且判断订单是否存在
         Order order = orderMapper.selectById(orderId);
         if (order==null){
             throw new BaseRuntimeException(ResultCode.PERMISSION_DENIED.modifyMessage("订单不存在"));
@@ -101,31 +142,53 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return order;
     }
 
+    /**
+     * 通过桌号查询未支付订单
+     * @param tableId 桌号
+     * @return 订单对象
+     */
     @Override
     public Order findByTableId(int tableId) {
+        //过桌号查询未支付订单
         QueryWrapper<Order> queryWrapper = new QueryWrapper<>();
         queryWrapper.lambda()
             .eq(Order::getTableId,tableId)
             .eq(Order::getIsPay,0);
-        Order order ;
-        try {
-            order = orderMapper.selectOne(queryWrapper);
-        }catch (Exception e){
-            throw new BaseRuntimeException(ResultCode.OPERATOR_UNSUPPORT.modifyMessage("该桌没有付费，请通知店员处理"));
+        List<Order> orderList = orderMapper.selectList(queryWrapper);
+        if (orderList.size()>1){
+            throw new BaseRuntimeException(ResultCode.PERMISSION_DENIED.modifyMessage("系统异常,该桌子之前的订单未付款"));
+        }else if (orderList.size()==0){
+            throw new BaseRuntimeException(ResultCode.PERMISSION_DENIED.modifyMessage("该卓还未下单，下单后重试"));
         }
-        return order;
+        return orderList.get(0);
     }
-
+    /**
+     * 查询订单分页列表
+     * @param isPay 订单是否支付 0：没有支付 1：支付
+     * @param pageNum 当前页
+     * @param pageSize 页面大小
+     * @return 分页对象
+     */
     @Override
-    public Page<Order> findAllByQuery(int isPay, int pageNum, int pageSize) {
+    public Page<Order> findAllByQuery(int tableId,int isPay, int pageNum, int pageSize) {
+        //获取当前登入用户信息
         User curUser = userService.getCurUser();
+        //判断当前登入是否具操作权限
         if (curUser==null||!curUser.getIsSuperAdmin()){
             throw new BaseRuntimeException(ResultCode.PERMISSION_DENIED.modifyMessage("权限不足"));
         }
+        //根据条件分页查询
         QueryWrapper<Order> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda()
-            .eq(Order::getIsPay,isPay);
+        if (isPay!=-1){
+            queryWrapper.lambda()
+                .eq(Order::getIsPay,isPay);
+        }
+        if (tableId!=-1){
+            queryWrapper.lambda()
+                .eq(Order::getTableId,tableId);
+        }
         Page<Order> page = new Page<>(pageNum,pageSize);
+        //根据更新时间对订单进行降序排序
         queryWrapper.orderByDesc("update_time");
         return orderMapper.selectPage(page,queryWrapper);
     }

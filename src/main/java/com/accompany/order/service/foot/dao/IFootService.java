@@ -2,6 +2,7 @@ package com.accompany.order.service.foot.dao;
 
 import com.accompany.order.controller.foot.footvo.FootAdminReqVo;
 import com.accompany.order.service.foot.dto.Foot;
+import com.accompany.order.service.foot.dto.FootCountOnMonth;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -26,4 +27,8 @@ public interface IFootService extends IService<Foot> {
     void delFoot(Long footId);
 
     void updateFoot(Long id, FootAdminReqVo footAdminReqVo);
+
+    List<Foot> findByIds(List<Long> ids);
+
+    List<FootCountOnMonth> findCountOnMonth(int month);
 }

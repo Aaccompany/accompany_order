@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Accompany
@@ -25,4 +26,12 @@ public class UserResVo {
     private Date createTime;
     @ApiModelProperty(value = "修改时间")
     private Date updateTime;
+    @ApiModelProperty(value = "是否离职")
+    private Boolean isDel;
+    @ApiModelProperty(value = "Token")
+    private String token;
+    @ApiModelProperty(value = "avatar")
+    private String avatar;
+    @ApiModelProperty(value = "roles")
+    private List<String> roles;
 }
