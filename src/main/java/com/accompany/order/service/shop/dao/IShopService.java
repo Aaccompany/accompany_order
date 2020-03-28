@@ -12,5 +12,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2019-12-28
  */
 public interface IShopService extends IService<Shop> {
-    Shop findShopById(Long id);
+    Shop findShopById();
 }

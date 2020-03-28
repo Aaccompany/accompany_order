@@ -22,7 +22,9 @@ public class CaffeineConfig {
      * 每个cache缺省：10秒超时、最多缓存50000条数据，需要修改可以在构造方法的参数中指定。
      */
     public enum Caches{
-        footType(86400,1000),  //有效期24个小时 , 最大容量1000
+        footType(86400,100),  //有效期24个小时 , 最大容量100
+        foot(86400,100),
+        listCache(86400,100),
         ;
         Caches() {
         }

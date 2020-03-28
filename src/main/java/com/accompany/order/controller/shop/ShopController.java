@@ -29,11 +29,11 @@ public class ShopController {
     @Resource(name = "shopServiceImpl")
     private IShopService shopService;
 
-    @GetMapping("/{id}")
+    @GetMapping("/")
     @ApiOperation(value = "获取店面信息(完成)",tags = "用户页面")
     @ApiImplicitParam(name = "id",value = "店面id")
-    public Result<ShopResVo> findShopMes(@PathVariable Long id){
-        return Result.success(CommonUtils.genByCopyProperties(shopService.findShopById(id),ShopResVo.class));
+    public Result<ShopResVo> findShopMes(){
+        return Result.success(CommonUtils.genByCopyProperties(shopService.findShopById(),ShopResVo.class));
     }
 }
 

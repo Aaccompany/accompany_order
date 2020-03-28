@@ -1,5 +1,6 @@
 package com.accompany.order.service.footType;
 
+import com.accompany.order.config.CaffeineConfig;
 import com.accompany.order.controller.foot.foottypevo.FootTypeAdminReqVo;
 import com.accompany.order.event.DelFootTypeEvent;
 import com.accompany.order.event.UpdateFootTypeEvent;
@@ -53,22 +54,27 @@ public class FootTypeServiceImpl extends ServiceImpl<FootTypeMapper, FootType> i
     private CacheManager cacheManager;
     @Resource
     private ApplicationContext applicationContext;
+
     @PostConstruct
     public void init(){
         log.info("加载全部菜品类型");
         //加载全部菜品类型
         FootTypeServiceImpl footTypeService = applicationContext.getBean(FootTypeServiceImpl.class);
-        Cache cache = cacheManager.getCache("footType");
+        Cache footTypeCache = cacheManager.getCache(CaffeineConfig.Caches.footType.name());
         List<FootType> footTypeList = footTypeService.findAllFootType();
         for (FootType footType : footTypeList) {
-            cache.put(footType.getId(),footType);
+            footTypeCache.put(footType.getId(),footType);
         }
+        Cache allFootTypeCache = cacheManager.getCache(CaffeineConfig.Caches.listCache.name());
+        allFootTypeCache.put(CaffeineConfig.Caches.footType.name(),footTypeList);
     }
+
     /**
      * 查询店铺的全部菜品类别
      * @return 菜品类别数组
      */
     @Override
+    @Cacheable(value = "listCache" , key = "'footType'")
     public List<FootType> findAllFootType() {
         QueryWrapper<FootType> query = new QueryWrapper<>();
         query.orderByDesc("update_time")
@@ -123,6 +129,7 @@ public class FootTypeServiceImpl extends ServiceImpl<FootTypeMapper, FootType> i
         footType.setUpdateUser(curUser.getId());
         //保存菜品类别
         saveOrUpdate(footType);
+        applicationEventPublisher.publishEvent(new UpdateFootTypeEvent(this,footType));
     }
 
     /**
@@ -158,7 +165,6 @@ public class FootTypeServiceImpl extends ServiceImpl<FootTypeMapper, FootType> i
     @Override
     @Cacheable(value = "footType",key="#footTypeId")
     public FootType footTypeDetail(Long footTypeId) {
-
         //通过{footTypeId}获取菜品类别
         return footTypeMapper.selectById(footTypeId);
     }
