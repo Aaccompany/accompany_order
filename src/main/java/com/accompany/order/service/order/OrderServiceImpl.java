@@ -1,7 +1,5 @@
 package com.accompany.order.service.order;
 
-import com.accompany.order.controller.order.OrderAdminResVo;
-import com.accompany.order.controller.order.OrderItemAdminResVo;
 import com.accompany.order.controller.order.OrderItemReqVo;
 import com.accompany.order.controller.order.OrderReqVo;
 import com.accompany.order.exception.BaseRuntimeException;
@@ -21,15 +19,16 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.collect.Lists;
-import com.sun.org.apache.xpath.internal.operations.Or;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +40,7 @@ import java.util.stream.Collectors;
  * @since 2019-12-28
  */
 @Service
+@Slf4j
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements IOrderService {
     @Resource(name = "userServiceImpl")
     private IUserService userService;
@@ -53,6 +53,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Resource(name = "orderItemServiceImpl")
     private IOrderItemService orderItemService;
+
+    private ConcurrentHashMap<Integer, Object> orderLocks;
+
+    @PostConstruct
+    public void init() {
+        log.info("初始化桌位行锁...");
+        orderLocks = new ConcurrentHashMap<>(16);
+    }
 
     /**
      * 支付订单
@@ -82,11 +90,23 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     /**
      * 创建订单
      * 需要加锁
+     *
      * @param orderReqVo 需要创建的订单信息
      */
     @Override
     @Transactional(rollbackFor = Throwable.class)
     public void placeOrder(OrderReqVo orderReqVo) {
+        int count = 0;
+        Object obj = new Object();
+        while ((++count)<=1000 &&  orderLocks.putIfAbsent(orderReqVo.getTableId(), obj) != null ) {
+            //log.info(String.format("正在获取行锁,tableId:%s;循环次数：%s", orderReqVo.getTableId(),count));
+        }
+        if (count>100){
+            log.info(String.format("获取行锁超时,tableId:%s;循环次数：%s", orderReqVo.getTableId(),count));
+            throw new BaseRuntimeException(ResultCode.FAILURE.modifyMessage("其他人正在点餐，请等待其他人点餐后再进行点餐"));
+        }
+        //说明没有其他线程创建订单，加锁成功
+        log.info(String.format("桌号行锁加锁成功,tableId:%s", orderReqVo.getTableId()));
         //通过菜品Id查询菜品集合
         Map<Long, Integer> footId2Count = orderReqVo.getItmeList().stream().collect(Collectors.toMap(OrderItemReqVo::getFootId, OrderItemReqVo::getCount));
         List<Foot> footList = footService.findByIds(Lists.newArrayList(footId2Count.keySet()));
@@ -96,15 +116,18 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         Order order = findByTableId(orderReqVo.getTableId());
         if (order != null) {
             updateOrder(orderReqVo, order, orderMoney, footMap, footId2Count);
-            return;
+        }else {
+            addOrder(orderReqVo, orderMoney, footMap);
         }
-        addOrder(orderReqVo, orderMoney, footMap);
+        //释放锁
+        orderLocks.remove(orderReqVo.getTableId());
+        log.info(String.format("桌号行锁释放锁成功,tableId:%s", orderReqVo.getTableId()));
     }
 
     /**
      * 修改订单
      */
-    public void updateOrder(OrderReqVo updateOrder, Order order, double orderMoney, Map<Long, Foot> footMap, Map<Long, Integer> footId2Count) {
+    private void updateOrder(OrderReqVo updateOrder, Order order, double orderMoney, Map<Long, Foot> footMap, Map<Long, Integer> footId2Count) {
         Date now = new Date();
         //表示是加餐操作,将新添加的菜品添加到该订单的订单项
         order.setUpdateTime(now);
@@ -114,19 +137,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         //查询添加的菜品是否在之前已经添加过了，如果添加过了就需要在原来的基础上添加
         //根据订单号+菜品id查询
         List<OrderItem> orderItems = orderItemService.findAllByOrderIdAndFootIds(order.getId(), Lists.newArrayList(footId2Count.keySet()));
-        Map<Long, OrderItem> oldFootId2OrderItem = orderItems.stream().collect(Collectors.toMap(OrderItem::getFootId, item->item));
+        Map<Long, OrderItem> oldFootId2OrderItem = orderItems.stream().collect(Collectors.toMap(OrderItem::getFootId, item -> item));
         //根据用户加餐的订单项来更新数据库中的订单项或新增订单项
         for (OrderItemReqVo orderItemReqVo : updateOrder.getItmeList()) {
             OrderItem orderItem = oldFootId2OrderItem.get(orderItemReqVo.getFootId());
             Foot foot = footMap.get(orderItemReqVo.getFootId());
-            if (orderItem==null){
+            if (orderItem == null) {
                 //表示为新的菜品
-                orderItemService.saveOrderItem(Lists.newArrayList(orderItemReqVo),footMap,order);
+                orderItemService.saveOrderItem(Lists.newArrayList(orderItemReqVo), footMap, order);
                 continue;
             }
             //表示顾客之前已经下单过了,更新订单项
-            orderItem.setCount(orderItemReqVo.getCount());
-            double orderItemMoney = orderItem.getMoney() + foot.getMoney()*orderItem.getCount();
+            orderItem.setCount(orderItem.getCount()+orderItemReqVo.getCount());
+            double orderItemMoney = orderItem.getMoney() + foot.getMoney() * orderItem.getCount();
             orderItem.setMoney(orderItemMoney);
             orderItemService.updateById(orderItem);
         }
@@ -135,7 +158,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     /**
      * 添加订单
      */
-    public void addOrder(OrderReqVo orderReqVo, double orderMoney, Map<Long, Foot> footMap) {
+    private void addOrder(OrderReqVo orderReqVo, double orderMoney, Map<Long, Foot> footMap) {
         //初始化订单
         Date now = new Date();
         Order order = CommonUtils.genByCopyProperties(orderReqVo, Order.class);
@@ -144,7 +167,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setCreateTime(now);
         order.setMoney(orderMoney);
         saveOrUpdate(order);
-        orderItemService.saveOrderItem(orderReqVo.getItmeList(),footMap,order);
+        orderItemService.saveOrderItem(orderReqVo.getItmeList(), footMap, order);
     }
 
     public Double orderSum(Map<Long, Integer> footId2Count, Map<Long, Foot> footMap) {
